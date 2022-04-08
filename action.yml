@@ -1,0 +1,33 @@
+name: after-deploy
+description: Wraps up github context after a deployment
+branding: {color: blue, icon: box}
+inputs:
+  environment: {description: environment name, required: true}
+  deployment_id: {description: current deployment id, required: true}
+runs:
+  using: composite
+  steps:
+    - name: set deployment status to success
+      uses: actions/github-script@v6
+      env:
+        environment: ${{inputs.environment}}
+        deployment_id: ${{inputs.deployment_id}}
+      with:
+        # language=js
+        script: |
+          const {owner, repo} = context.issue
+          const {deployment_id, environment} = process.env
+          github.rest.repos.createDeploymentStatus({owner, repo, deployment_id, environment, state: 'success'})
+
+    - name: set deployment status to failure
+      if: failure()
+      uses: actions/github-script@v6
+      env:
+        environment: ${{inputs.environment}}
+        deployment_id: ${{inputs.deployment_id}}
+      with:
+        # language=js
+        script: |
+          const {owner, repo} = context.issue
+          const {deployment_id, environment} = process.env
+          github.rest.repos.createDeploymentStatus({owner, repo, deployment_id, environment, state: 'failure'})
